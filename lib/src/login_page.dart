@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:menu/src/user_manager.dart'; // Asegúrate de que este path sea correcto
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
-  final UserManager userManager;
-
-  const LoginPage({Key? key, required this.userManager}) : super(key: key);
+  const LoginPage({Key? key}) : super(key: key);
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -15,19 +13,30 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  void _login() {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  void _login() async {
     if (_formKey.currentState!.validate()) {
       String enteredEmail = _emailController.text.trim();
       String enteredPassword = _passwordController.text.trim();
 
-      if (widget.userManager.validateUser(enteredEmail, enteredPassword)) {
+      try {
+        await _auth.signInWithEmailAndPassword(
+            email: enteredEmail, password: enteredPassword);
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('¡Inicio de sesión exitoso!')),
         );
         Navigator.pushReplacementNamed(context, '/');
-      } else {
+      } on FirebaseAuthException catch (e) {
+        String message = 'Error desconocido';
+        if (e.code == 'user-not-found') {
+          message = 'Usuario no encontrado';
+        } else if (e.code == 'wrong-password') {
+          message = 'Contraseña incorrecta';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Correo o contraseña incorrectos')),
+          SnackBar(content: Text(message)),
         );
       }
     }

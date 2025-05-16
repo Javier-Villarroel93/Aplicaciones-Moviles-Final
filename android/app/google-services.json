@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "14026475443",
+    "project_id": "xp-game-f001a",
+    "storage_bucket": "xp-game-f001a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:14026475443:android:abbfb19858e5d11926edc6",
+        "android_client_info": {
+          "package_name": "com.example.menu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLoKD1Q26ni69wL4T46tdD_RN_LFEVvHY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

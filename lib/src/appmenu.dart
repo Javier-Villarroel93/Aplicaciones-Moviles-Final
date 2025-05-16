@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:menu/src/carrito_provider.dart';
-import 'package:provider/provider.dart'; // Importa provider
+import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-void main() {
+// Asegúrate de haber inicializado Firebase en tu main.dart o en algún punto anterior
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(
     ChangeNotifierProvider(
-      create: (context) => CarritoProvider(), // Proveedor de carrito
+      create: (context) => CarritoProvider(),
       child: MyApp(),
     ),
   );
@@ -17,6 +22,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: MenuPrincipal(),
+      // Define tus rutas aquí si las estás utilizando
+      // routes: {
+      //   '/home': (context) => HomeScreen(),
+      //   '/configuration': (context) => ConfigurationScreen(),
+      //   '/company': (context) => CompanyScreen(),
+      //   '/clases': (context) => TrailersScreen(),
+      // },
     );
   }
 }
@@ -27,7 +39,8 @@ class MenuPrincipal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
-
+    final User? user = FirebaseAuth.instance.currentUser;
+    String? displayName = user?.displayName;
 
     return Scaffold(
       appBar: AppBar(
@@ -42,6 +55,21 @@ class MenuPrincipal extends StatelessWidget {
         ),
         backgroundColor: Colors.deepPurple,
         elevation: 0,
+        actions: [
+          if (displayName != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Center(
+                child: Text(
+                  'Bienvenido, $displayName',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       extendBodyBehindAppBar: true,
       drawer: Drawer(
@@ -62,23 +90,23 @@ class MenuPrincipal extends StatelessWidget {
               _AnimatedDrawerHeaderItem(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    CircleAvatar(
+                  children: [
+                    const CircleAvatar(
                       radius: 40,
-                      backgroundImage: AssetImage('assets/images/dota1.webp.'),
+                      backgroundImage: AssetImage('assets/images/dota1.webp'),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     Text(
-                      'Javier Villarroel',
-                      style: TextStyle(
+                      displayName ?? 'Invitado', // Muestra el nombre del usuario o "Invitado"
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      'Jugador Pro',
-                      style: TextStyle(
+                      user?.email ?? 'No autenticado', // Muestra el email o un mensaje
+                      style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13,
                       ),
@@ -95,6 +123,34 @@ class MenuPrincipal extends StatelessWidget {
                   icon: Icons.business, text: 'Empresa', route: '/company'),
               _buildDrawerItem(context,
                   icon: Icons.sports_esports, text: 'Trailers', route: '/clases'),
+              ListTile(
+                leading: const Icon(Icons.logout, color: Colors.white),
+                title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.white)),
+                onTap: () async {
+                  Navigator.pop(context); // Cierra el drawer
+                  try {
+                    await FirebaseAuth.instance.signOut();
+                    // Aquí puedes navegar a la pantalla de inicio de sesión si lo deseas
+                    // Navigator.pushReplacementNamed(context, '/login');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sesión cerrada correctamente.')),
+                    );
+                    // Actualiza la UI si es necesario para reflejar el estado de no autenticado
+                    // Por ejemplo, podrías reconstruir el widget MenuPrincipal
+                    if (context.mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MenuPrincipal()),
+                      );
+                    }
+                  } catch (e) {
+                    print('Error al cerrar sesión: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error al cerrar sesión: $e')),
+                    );
+                  }
+                },
+              ),
             ],
           ),
         ),
@@ -162,254 +218,232 @@ class MenuPrincipal extends StatelessWidget {
     );
   }
 
-Widget _buildGameCarousel(
-    BuildContext context, double screenWidth, int itemCount, String type) {
-  List<String> imagePaths = [];
-  List<String> gameNames = [];
-  List<String> gameDescriptions = [];
-  List<String> gameCategories = [];
+  Widget _buildGameCarousel(
+      BuildContext context, double screenWidth, int itemCount, String type) {
+    List<String> imagePaths = [];
+    List<String> gameNames = [];
+    List<String> gameDescriptions = [];
+    List<String> gameCategories = [];
 
-  if (type == 'offer') {
-    imagePaths = [
-      'assets/images/ofter1.jpg',
-      'assets/images/ofter2.jpg',
-      'assets/images/ofter3.jpg',
-      'assets/images/ofter4.jpg',
-      'assets/images/ofter5.jpg',
-      'assets/images/ofter6.jpg',
-    ];
-    gameNames = [
-      'Days Gone (2019)',
-      'Guardianes de la Galaxia (2021)',
-      'Resident Evil 4 Remake (2023)',
-      'God of War (2018)',
-      'Resident Evil Village (2021)',
-      'Bloodborne (2015)'
-    ];
-    gameDescriptions = [
-      'Sobrevive en un mundo abierto infestado de infectados en esta aventura postapocalíptica.',
-      'Únete a los Guardianes en una historia original llena de acción y humor.',
-      'Revive el clásico en una versión moderna con gráficos mejorados y combate renovado.',
-      'Embárcate en un viaje emocional junto a Kratos y Atreus por la mitología nórdica.',
-      'Una historia de horror y supervivencia con gráficos de última generación.',
-      'Explora Yharnam en esta aventura gótica llena de acción y misterio.'
-    ];
-    gameCategories = [
-      'Aventura',
-      'Acción',
-      'Survival Horror',
-      'Hack and Slash',
-      'Terror',
-      'RPG'
-    ];
-  } else if (type == 'new') {
-    imagePaths = [
-      'assets/images/new1.jpg',
-      'assets/images/new2.jpg',
-      'assets/images/new3.jpg',
-      'assets/images/new4.jpg',
-      'assets/images/new5.jpg',
-      'assets/images/new6.jpg',
-    ];
-    gameNames = [
-      'Uncharted 4 (2016)',
-      'Call of Duty: Modern Warfare (2019)',
-      'Battlefield 1 (2016)',
-      'The Callisto Protocol (2022)',
-      'Until Dawn (2015)',
-      'Doom Eternal (2020)'
-    ];
-    gameDescriptions = [
-      'Descubre el último tesoro con Nathan Drake en esta épica aventura narrativa.',
-      'Acción táctica en un reboot oscuro y realista de la saga Modern Warfare.',
-      'Vive la Primera Guerra Mundial con intensos combates multijugador.',
-      'Un survival horror espacial con una ambientación aterradora.',
-      'Tus decisiones determinan quién sobrevive en esta historia interactiva de horror.',
-      'Destruye demonios con brutalidad en este shooter frenético y visceral.'
-    ];
-    gameCategories = [
-      'Aventura',
-      'Shooter Táctico',
-      'FPS Histórico',
-      'Terror Espacial',
-      'Narrativo',
-      'Acción Rápida'
-    ];
-  } else if (type == 'coming_soon') {
-    imagePaths = [
-      'assets/images/coming_soon1.jpg',
-      'assets/images/coming_soon2.jpg',
-      'assets/images/coming_soon3.jpg',
-      'assets/images/coming_soon4.jpg',
-      'assets/images/coming_soon5.jpg',
-      'assets/images/coming_soon6.jpg',
-    ];
-    gameNames = [
-      'Spider-Man (2018)',
-      'Resident Evil 3 Remake (2020)',
-      'Gran Turismo Sport (2017)',
-      'Mortal Kombat X (2015)',
-      'Grand Theft Auto V (2013)',
-      'Horizon Forbidden West (2022)'
-    ];
-    gameDescriptions = [
-      'Balancea por Nueva York en una historia original del superhéroe arácnido.',
-      'Enfréntate al temido Némesis en esta intensa reimaginación de un clásico.',
-      'Carreras realistas con cientos de autos y circuitos icónicos.',
-      'Lucha brutal con nuevos personajes, fatalities épicos y mucha sangre.',
-      'Explora Los Santos en uno de los sandbox más exitosos de la historia.',
-      'Acompaña a Aloy en una nueva aventura por tierras desconocidas y salvajes.'
-    ];
-    gameCategories = [
-      'Superhéroes',
-      'Survival Horror',
-      'Simulación de Carreras',
-      'Lucha',
-      'Mundo Abierto',
-      'Acción y Aventura'
-    ];
-  }
+    if (type == 'offer') {
+      imagePaths = [
+        'assets/images/ofter1.jpg',
+        'assets/images/ofter2.jpg',
+        'assets/images/ofter3.jpg',
+        'assets/images/ofter4.jpg',
+        'assets/images/ofter5.jpg',
+        'assets/images/ofter6.jpg',
+      ];
+      gameNames = [
+        'Days Gone (2019)',
+        'Guardianes de la Galaxia (2021)',
+        'Resident Evil 4 Remake (2023)',
+        'God of War (2018)',
+        'Resident Evil Village (2021)',
+        'Bloodborne (2015)'
+      ];
+      gameDescriptions = [
+        'Sobrevive en un mundo abierto infestado de infectados en esta aventura postapocalíptica.',
+        'Únete a los Guardianes en una historia original llena de acción y humor.',
+        'Revive el clásico en una versión moderna con gráficos mejorados y combate renovado.',
+        'Embárcate en un viaje emocional junto a Kratos y Atreus por la mitología nórdica.',
+        'Una historia de horror y supervivencia con gráficos de última generación.',
+        'Explora Yharnam en esta aventura gótica llena de acción y misterio.'
+      ];
+      gameCategories = ['Aventura', 'Acción', 'Survival Horror', 'Hack and Slash', 'Terror', 'RPG'];
+    } else if (type == 'new') {
+      imagePaths = [
+        'assets/images/new1.jpg',
+        'assets/images/new2.jpg',
+        'assets/images/new3.jpg',
+        'assets/images/new4.jpg',
+        'assets/images/new5.jpg',
+        'assets/images/new6.jpg',
+      ];
+      gameNames = [
+        'Uncharted 4 (2016)',
+        'Call of Duty: Modern Warfare (2019)',
+        'Battlefield 1 (2016)',
+        'The Callisto Protocol (2022)',
+        'Until Dawn (2015)',
+        'Doom Eternal (2020)'
+      ];
+      gameDescriptions = [
+        'Descubre el último tesoro con Nathan Drake en esta épica aventura narrativa.',
+        'Acción táctica en un reboot oscuro y realista de la saga Modern Warfare.',
+        'Vive la Primera Guerra Mundial con intensos combates multijugador.',
+        'Un survival horror espacial con una ambientación aterradora.',
+        'Tus decisiones determinan quién sobrevive en esta historia interactiva de horror.',
+        'Destruye demonios con brutalidad en este shooter frenético y visceral.'
+      ];
+      gameCategories = ['Aventura', 'Shooter Táctico', 'FPS Histórico', 'Terror Espacial', 'Narrativo', 'Acción Rápida'];
+    } else if (type == 'coming_soon') {
+      imagePaths = [
+        'assets/images/coming_soon1.jpg',
+        'assets/images/coming_soon2.jpg',
+        'assets/images/coming_soon3.jpg',
+        'assets/images/coming_soon4.jpg',
+        'assets/images/coming_soon5.jpg',
+        'assets/images/coming_soon6.jpg',
+      ];
+      gameNames = [
+        'Spider-Man (2018)',
+        'Resident Evil 3 Remake (2020)',
+        'Gran Turismo Sport (2017)',
+        'Mortal Kombat X (2015)',
+        'Grand Theft Auto V (2013)',
+        'Horizon Forbidden West (2022)'
+      ];
+      gameDescriptions = [
+        'Balancea por Nueva York en una historia original del superhéroe arácnido.',
+        'Enfréntate al temido Némesis en esta intensa reimaginación de un clásico.',
+        'Carreras realistas con cientos de autos y circuitos icónicos.',
+        'Lucha brutal con nuevos personajes, fatalities épicos y mucha sangre.',
+        'Explora Los Santos en uno de los sandbox más exitosos de la historia.',
+        'Acompaña a Aloy en una nueva aventura por tierras desconocidas y salvajes.'
+      ];
+      gameCategories = ['Superhéroes', 'Survival Horror', 'Simulación de Carreras', 'Lucha', 'Mundo Abierto', 'Acción y Aventura'];
+    }
 
-  return SizedBox(
-    height: 220,
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final double cardWidth = (constraints.maxWidth - 20) / 4;
-        final double cardPadding = (constraints.maxWidth - (cardWidth * 3)) / 5;
-        final double viewportFraction =
-            (cardWidth + cardPadding * 2) / constraints.maxWidth;
+    return SizedBox(
+      height: 220,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double cardWidth = (constraints.maxWidth - 20) / 4;
+          final double cardPadding = (constraints.maxWidth - (cardWidth * 3)) / 5;
+          final double viewportFraction =
+              (cardWidth + cardPadding * 2) / constraints.maxWidth;
 
-        return PageView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: 1000,
-          controller: PageController(
-            viewportFraction: viewportFraction,
-            initialPage: 0,
-          ),
-          physics: const ClampingScrollPhysics(),
-          pageSnapping: true,
-          clipBehavior: Clip.none,
-          scrollBehavior:
-              ScrollConfiguration.of(context).copyWith(scrollbars: false),
-          itemBuilder: (context, index) {
-            final int actualIndex = index % imagePaths.length;
-            String imagePath = imagePaths[actualIndex];
-            String price = '${(actualIndex + 1) * 10}.00€';
+          return PageView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: 1000,
+            controller: PageController(
+              viewportFraction: viewportFraction,
+              initialPage: 0,
+            ),
+            physics: const ClampingScrollPhysics(),
+            pageSnapping: true,
+            clipBehavior: Clip.none,
+            scrollBehavior:
+                ScrollConfiguration.of(context).copyWith(scrollbars: false),
+            itemBuilder: (context, index) {
+              final int actualIndex = index % imagePaths.length;
+              String imagePath = imagePaths[actualIndex];
+              String price = '${(actualIndex + 1) * 10}.00€';
 
-            return Align(
-              alignment: Alignment.center,
-              child: SizedBox(
-                width: cardWidth,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: cardPadding / 2),
-                  child: GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15.0),
-                          ),
-                          elevation: 10,
-                          backgroundColor: Colors.white,
-                          title: Text(
-                            gameNames[actualIndex],
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blueAccent,
+              return Align(
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: cardWidth,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: cardPadding / 2),
+                    child: GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15.0),
                             ),
-                          ),
-                          content: Container(
-                            constraints: const BoxConstraints(
-                              maxHeight: 250,
+                            elevation: 10,
+                            backgroundColor: Colors.white,
+                            title: Text(
+                              gameNames[actualIndex],
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blueAccent,
+                              ),
                             ),
-                            child: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Categoría: ${gameCategories[actualIndex]}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.blueGrey,
+                            content: Container(
+                              constraints: const BoxConstraints(
+                                maxHeight: 250,
+                              ),
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Categoría: ${gameCategories[actualIndex]}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.blueGrey,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    'Descripción: ${gameDescriptions[actualIndex]}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black87,
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      'Descripción: ${gameDescriptions[actualIndex]}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.black87,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  // Mostrar precio con descuento
-                                  actualIndex % 2 == 0
-                                      ? Row(
-                                          children: [
-                                            Text(
-                                              'Precio Original: ${price}',
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.red,
-                                                decoration:
-                                                    TextDecoration.lineThrough,
+                                    const SizedBox(height: 10),
+                                    actualIndex % 2 == 0
+                                        ? Row(
+                                            children: [
+                                              Text(
+                                                'Precio Original: ${price}',
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.red,
+                                                  decoration:
+                                                      TextDecoration.lineThrough,
+                                                ),
                                               ),
-                                            ),
-                                            SizedBox(width: 10),
-                                            Text(
-                                              'Precio con Descuento: ${(double.parse(price.split('€')[0]) * 0.8).toStringAsFixed(2)}€',
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.green,
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                'Precio con Descuento: ${(double.parse(price.split('€')[0]) * 0.8).toStringAsFixed(2)}€',
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green,
+                                                ),
                                               ),
+                                            ],
+                                          )
+                                        : Text(
+                                            'Precio: ${price}',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green,
                                             ),
-                                          ],
-                                        )
-                                      : Text(
-                                          'Precio: ${price}',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.green,
                                           ),
-                                        ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text(
+                                  'Cerrar',
+                                  style: TextStyle(color: Colors.blue),
+                                ),
+                              ),
+                            ],
                           ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text(
-                                'Cerrar',
-                                style: TextStyle(color: Colors.blue),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    child: _HoverGameCard(
-                      imageUrl: imagePath,
-                      price: price,
-                      width: cardWidth,
-                      discount: actualIndex % 2 == 0 ? '20% OFF' : null,
+                        );
+                      },
+                      child: _HoverGameCard(
+                        imageUrl: imagePath,
+                        price: price,
+                        width: cardWidth,
+                        discount: actualIndex % 2 == 0 ? '20% OFF' : null,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      },
-    ),
-  );
-}
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
 
   Widget _buildFooter() {
     return Container(
@@ -439,7 +473,7 @@ Widget _buildGameCarousel(
             'Puedes escribirnos a través de nuestras redes sociales o '
             'enviarnos un correo directamente a info@gamestore.com',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 16,
               height: 1.6,
@@ -551,7 +585,7 @@ class _AnimatedDrawerItemState extends State<_AnimatedDrawerItem> {
         child: ListTile(
           leading: Icon(widget.icon, color: Colors.white, size: 26),
           title: AnimatedDefaultTextStyle(
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 17,
               fontWeight: FontWeight.w500,

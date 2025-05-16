@@ -1,23 +1,5 @@
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Configuración',
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-      ),
-      home: const ConfigurationPage(),
-    );
-  }
-}
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ConfigurationPage extends StatefulWidget {
   const ConfigurationPage({super.key});
@@ -29,9 +11,9 @@ class ConfigurationPage extends StatefulWidget {
 class _ConfigurationPageState extends State<ConfigurationPage> {
   bool _isDarkMode = false;
 
-  // Método para cerrar sesión
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+
   void _logout() {
-    // Mostrar un cuadro de diálogo para confirmar el cierre de sesión
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -41,17 +23,16 @@ class _ConfigurationPageState extends State<ConfigurationPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Cierra el diálogo
+                Navigator.of(context).pop();
               },
               child: const Text('Cancelar'),
             ),
             TextButton(
-              onPressed: () {
-                // Aquí pondrías la lógica para cerrar sesión
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Has cerrado sesión')),
                 );
-                // Simula una navegación de cierre de sesión (como regresar a la pantalla de inicio de sesión)
                 Navigator.pushReplacementNamed(context, '/login');
               },
               child: const Text('Cerrar sesión'),
@@ -82,7 +63,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Cierra el diálogo
+                Navigator.of(context).pop();
               },
               child: const Text('Cerrar'),
             ),
@@ -90,6 +71,27 @@ class _ConfigurationPageState extends State<ConfigurationPage> {
         );
       },
     );
+  }
+
+  void _showAccountInfo() {
+    if (currentUser == null) {
+      _showInfoDialog('Cuenta', 'No hay usuario logueado actualmente.');
+      return;
+    }
+
+    String displayName = currentUser!.displayName ?? 'Nombre no disponible';
+    List<String> parts = displayName.split(' ');
+    String firstName = parts.isNotEmpty ? parts[0] : '';
+    String lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    String email = currentUser!.email ?? 'Correo no disponible';
+    String uid = currentUser!.uid;
+
+    String info = 'Nombre: $firstName\n'
+                  'Apellido: $lastName\n'
+                  'Correo: $email\n'
+                  'UID: $uid';
+
+    _showInfoDialog('Cuenta', info);
   }
 
   @override
@@ -102,40 +104,14 @@ class _ConfigurationPageState extends State<ConfigurationPage> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         children: [
-          // Opción Preferencias
-          _buildSettingTile(
-            title: 'Preferencias',
-            subtitle: 'Tema, Notificaciones, General',
-            icon: Icons.settings,
-            onTap: () {
-              _showInfoDialog('Preferencias', 'Aquí puedes configurar tus preferencias generales.');
-            },
-          ),
-          const SizedBox(height: 16),
-          
-          // Opción Cuenta
           _buildSettingTile(
             title: 'Cuenta',
             subtitle: 'Perfil, Contraseña, Seguridad',
             icon: Icons.person,
-            onTap: () {
-              _showInfoDialog('Cuenta', 'Administra tu perfil, contraseña y seguridad.');
-            },
+            onTap: _showAccountInfo,
           ),
           const SizedBox(height: 16),
-          
-          // Opción Privacidad
-          _buildSettingTile(
-            title: 'Privacidad',
-            subtitle: 'Permisos, Datos',
-            icon: Icons.lock,
-            onTap: () {
-              _showInfoDialog('Privacidad', 'Ajusta permisos y el uso de tus datos.');
-            },
-          ),
-          const SizedBox(height: 16),
-          
-          // Opción Acerca de
+
           _buildSettingTile(
             title: 'Acerca de',
             subtitle: 'Versión de la App, Términos, Licencias',
@@ -145,13 +121,12 @@ class _ConfigurationPageState extends State<ConfigurationPage> {
             },
           ),
           const SizedBox(height: 16),
-          
-          // Botón de Cerrar sesión
+
           _buildSettingTile(
             title: 'Cerrar sesión',
             subtitle: 'Cerrar sesión de la aplicación',
             icon: Icons.exit_to_app,
-            onTap: _logout,  // Aquí está la función para cerrar sesión con confirmación
+            onTap: _logout,
           ),
         ],
       ),

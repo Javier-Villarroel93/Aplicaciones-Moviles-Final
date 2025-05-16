@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Asegúrate de tener Provider importado
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'package:menu/src/login_page.dart';
 import 'package:menu/src/appmenu.dart';
 import 'package:menu/src/home_page.dart';
@@ -9,9 +12,14 @@ import 'package:menu/src/clases_page.dart';
 import 'package:menu/src/register_page.dart';
 import 'package:menu/src/user_manager.dart';
 import 'package:menu/src/carrito_provider.dart';
-import 'package:menu/src/carrito_page.dart'; // Asegúrate de importar CarritoPage
+import 'package:menu/src/carrito_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   final userManager = UserManager(); // Inicializar el UserManager
 
   runApp(
@@ -38,16 +46,16 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.deepPurple,
         fontFamily: 'Inter',
       ),
-      initialRoute: '/login', // Asegúrate de tener la ruta correcta inicial
+      initialRoute: '/login',
       routes: {
-        '/login': (context) => LoginPage(userManager: userManager),
-        '/': (context) => const MenuPrincipal(), // Página de menú principal
+        '/login': (context) => const LoginPage(),
+        '/': (context) => const MenuPrincipal(),
         '/home': (context) => const HomePage(),
         '/configuration': (context) => const ConfigurationPage(),
         '/company': (context) => const CompanyPage(),
         '/clases': (context) => const ClasesPage(),
         '/register': (context) => RegisterPage(userManager: userManager),
-        '/carrito': (context) => const CarritoPage(), // Ruta al carrito
+        '/carrito': (context) => const CarritoPage(),
       },
     );
   }

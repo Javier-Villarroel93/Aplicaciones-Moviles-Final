@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:menu/src/user_manager.dart'; // Asegúrate de que este path sea correcto
+import 'package:menu/src/user_manager.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RegisterPage extends StatefulWidget {
   final UserManager userManager;
@@ -12,25 +13,52 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController(); // Campo para confirmar la contraseña
+  final _confirmPasswordController = TextEditingController();
 
-  void _register() {
+  Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      String enteredEmail = _emailController.text.trim();
-      String enteredPassword = _passwordController.text.trim();
+      String firstName = _firstNameController.text.trim();
+      String lastName = _lastNameController.text.trim();
+      String email = _emailController.text.trim();
+      String password = _passwordController.text.trim();
 
-      if (widget.userManager.emailExists(enteredEmail)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('El correo ya está registrado')),
+      try {
+        // Crear usuario en Firebase Auth
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
         );
-      } else {
-        widget.userManager.registerUser(enteredEmail, enteredPassword);
+
+        // Actualizar displayName con nombre y apellidos
+        await userCredential.user?.updateDisplayName('$firstName $lastName');
+        await userCredential.user?.reload(); // refrescar datos del usuario
+        User? updatedUser = FirebaseAuth.instance.currentUser;
+
+        // Registrar en UserManager si usas este sistema
+        widget.userManager.registerUser(email, password);
+
+        // Mostrar mensaje de éxito y redirigir
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Usuario registrado exitosamente!')),
+          SnackBar(content: Text('¡Usuario ${updatedUser?.displayName ?? ''} registrado exitosamente!')),
         );
         Navigator.pushReplacementNamed(context, '/login');
+      } on FirebaseAuthException catch (e) {
+        String message = 'Error al registrar';
+        if (e.code == 'email-already-in-use') {
+          message = 'El correo ya está registrado';
+        } else if (e.code == 'invalid-email') {
+          message = 'El correo no es válido';
+        } else if (e.code == 'weak-password') {
+          message = 'La contraseña es muy débil';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       }
     }
   }
@@ -80,6 +108,46 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                         const SizedBox(height: 10),
+
+                        // Campo Nombre
+                        TextFormField(
+                          controller: _firstNameController,
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.person),
+                            labelText: 'Nombre',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingresa tu nombre';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 15),
+
+                        // Campo Apellidos
+                        TextFormField(
+                          controller: _lastNameController,
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.person_outline),
+                            labelText: 'Apellidos',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingresa tus apellidos';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 15),
+
+                        // Campo Email
                         TextFormField(
                           controller: _emailController,
                           decoration: InputDecoration(
@@ -100,6 +168,8 @@ class _RegisterPageState extends State<RegisterPage> {
                           },
                         ),
                         const SizedBox(height: 15),
+
+                        // Campo Contraseña
                         TextFormField(
                           controller: _passwordController,
                           obscureText: true,
@@ -121,6 +191,8 @@ class _RegisterPageState extends State<RegisterPage> {
                           },
                         ),
                         const SizedBox(height: 15),
+
+                        // Confirmar Contraseña
                         TextFormField(
                           controller: _confirmPasswordController,
                           obscureText: true,
@@ -142,6 +214,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           },
                         ),
                         const SizedBox(height: 25),
+
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(

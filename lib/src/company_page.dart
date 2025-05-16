@@ -71,7 +71,6 @@ class CompanyPage extends StatelessWidget {
           ),
         ),
       ),
-      // Eliminado el botón de "Nuevo Proyecto"
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
