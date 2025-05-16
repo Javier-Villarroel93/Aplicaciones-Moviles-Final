@@ -1,0 +1,53 @@
+name: menu
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  video_player: ^2.4.5
+  provider: ^6.0.1
+  carousel_slider: ^4.2.1
+  cupertino_icons: ^1.0.8
+  flutter_localizations:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/dota1.webp
+    - assets/images/ofter1.jpg
+    - assets/images/ofter2.jpg
+    - assets/images/ofter3.jpg
+    - assets/images/ofter4.jpg
+    - assets/images/ofter5.jpg
+    - assets/images/ofter6.jpg
+    - assets/images/new1.jpg
+    - assets/images/new2.jpg
+    - assets/images/new3.jpg
+    - assets/images/new4.jpg
+    - assets/images/new5.jpg
+    - assets/images/new6.jpg
+    - assets/images/coming_soon1.jpg
+    - assets/images/coming_soon2.jpg
+    - assets/images/coming_soon3.jpg
+    - assets/images/coming_soon4.jpg
+    - assets/images/coming_soon5.jpg
+    - assets/images/coming_soon6.jpg
+    - assets/videos/red_dead_video.mp4
+    - assets/videos/doom_video.mp4
+    - assets/videos/auto_video.mp4
+    - assets/videos/Ronin_video.mp4
+    - assets/videos/cod_video.mp4
+    - assets/videos/black_video.mp4
